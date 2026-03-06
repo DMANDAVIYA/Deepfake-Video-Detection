@@ -11,7 +11,7 @@ class DeepfakeDetector:
 
         predictions = self.classifier.predict(frames)
 
-        fake_scores = [p['score'] for p in predictions if p['label'].lower() == 'deepfake']
+        fake_scores = [p['score'] for p in predictions if p['label'].lower() == 'realism']
         avg_fake_score = sum(fake_scores) / len(predictions) if predictions else 0.0
 
         return {
