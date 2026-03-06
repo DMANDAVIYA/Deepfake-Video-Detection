@@ -1,22 +1,42 @@
-from detector import DeepfakeDetector
 import os
-import cv2
-import numpy as np
+import json
+import glob
+from detector import DeepfakeDetector
 
-# Create a blank dummy video for the test to process
-dummy_video = "dummy_test.mp4"
-out = cv2.VideoWriter(dummy_video, cv2.VideoWriter_fourcc(*'mp4v'), 1.0, (224, 224))
-for _ in range(3):
-    out.write(np.zeros((224, 224, 3), dtype=np.uint8))
-out.release()
+INPUT_DIR = os.path.join("data", "input")
+OUTPUT_DIR = os.path.join("data", "output")
 
-print("Initializing detector. This WILL download the model weights (approx 340MB)...")
-detector = DeepfakeDetector() # First init triggers the HuggingFace download
+def main():
+    os.makedirs(INPUT_DIR, exist_ok=True)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    
+    video_files = glob.glob(os.path.join(INPUT_DIR, "*.mp4"))
+    
+    if not video_files:
+        print(f"No .mp4 files found in {INPUT_DIR}")
+        return
 
-print("Running detection on dummy video...")
-result = detector.detect(dummy_video)
-print(f"Result: {result}")
+    print(f"Initializing detector. Found {len(video_files)} videos to process...")
+    detector = DeepfakeDetector() 
+    
+    results = {}
+    
+    for video_path in video_files:
+        filename = os.path.basename(video_path)
+        print(f"Processing {filename}...")
+        try:
+            res = detector.detect(video_path)
+            results[filename] = res
+            print(f"  -> {'FAKE' if res['is_fake'] else 'REAL'} (Confidence: {res['confidence']:.2f})")
+        except Exception as e:
+            print(f"  -> Error processing {filename}: {e}")
+            results[filename] = {"error": str(e)}
 
-# Clean up
-if os.path.exists(dummy_video):
-    os.remove(dummy_video)
+    output_file = os.path.join(OUTPUT_DIR, "results.json")
+    with open(output_file, 'w') as f:
+        json.dump(results, f, indent=4)
+        
+    print(f"\nProcessing complete! Results saved to {output_file}")
+
+if __name__ == "__main__":
+    main()

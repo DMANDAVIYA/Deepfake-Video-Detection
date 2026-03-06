@@ -5,13 +5,12 @@ class DeepfakeDetector:
     def __init__(self, classifier: ViTClassifier = None):
         self.classifier = classifier or ViTClassifier()
 
-    def detect(self, video_path: str, num_frames: int = 10, threshold: float = 0.5) -> dict:
-        """Analyzes a video and returns fake probability."""
-        frames = extract_frames(video_path, num_frames)
+    def detect(self, video_path: str, threshold: float = 0.5) -> dict:
+        frames = extract_frames(video_path)
         if not frames: return {"is_fake": False, "confidence": 0.0, "details": "No frames extracted"}
 
         predictions = self.classifier.predict(frames)
-        
+
         fake_scores = [p['score'] for p in predictions if p['label'].lower() == 'deepfake']
         avg_fake_score = sum(fake_scores) / len(predictions) if predictions else 0.0
 
